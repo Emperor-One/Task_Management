@@ -6,10 +6,16 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-        onPressed: () {
-          context.push("/TodaysTasksScreen");
-        },
-        child: Text("Go To Today's tasks"));
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: ElevatedButton(
+              onPressed: () {
+                context.push("/TodaysTasksScreen");
+              },
+              child: Text("Go To Today's tasks")),
+        ),
+      ),
+    );
   }
 }

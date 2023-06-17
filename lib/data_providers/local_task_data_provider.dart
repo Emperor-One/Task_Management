@@ -13,8 +13,7 @@ class LocalTaskDataProvider {
       stopTime TEXT DEFAULT "",
       isDone INTEGER DEFAULT 0,
       isImportant INTEGER,
-      category TEXT DEFAULT "",
-      date TEXT
+      category TEXT DEFAULT ""
     )""");
 
     await database.execute("""CREATE TABLE IF NOT EXISTS subTasks(

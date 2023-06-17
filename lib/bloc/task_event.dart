@@ -24,10 +24,11 @@ class CreateTask extends TaskEvent {
 
 class UpdateTask extends TaskEvent {
   final Task task;
-  const UpdateTask({required this.task});
+  final bool isTimeUpdated;
+  const UpdateTask({required this.task, required this.isTimeUpdated});
 
   @override
-  List<Object> get props => [task];
+  List<Object> get props => [task, isTimeUpdated];
 }
 
 class DeleteTask extends TaskEvent {

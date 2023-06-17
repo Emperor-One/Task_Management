@@ -7,7 +7,17 @@ abstract class TaskState extends Equatable {
   List<Object> get props => [];
 }
 
-class TaskInitial extends TaskState {}
+class TaskInitial extends TaskState {
+  final NotificationService notificationService = NotificationService();
+
+  TaskInitial() {
+    initNot();
+  }
+
+  void initNot() async {
+    await notificationService.initNotification();
+  }
+}
 
 class TaskLoading extends TaskState {}
 

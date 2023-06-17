@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:task_management/screens/home_screen.dart';
 
 import '../bloc/task_bloc.dart';
@@ -13,8 +12,10 @@ const Color secondaryTextColor = Color(0xFF888888);
 
 class ToDoWidget extends StatelessWidget {
   final Task task;
+  final double containerWidth;
 
-  const ToDoWidget({required this.task, super.key});
+  const ToDoWidget(
+      {required this.task, required this.containerWidth, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -34,50 +35,48 @@ class ToDoWidget extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 18.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Text(
-                  //   "01/11/2023",
-                  //   style: Theme.of(context).textTheme.bodySmall,
-                  // ),
-                  Text(
-                    task.startTime ?? "",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  Text(
-                    task.stopTime ?? "",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+              child: SizedBox(
+                width: containerWidth * 0.16,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        Task.dateString(task.startTime),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    Text(
+                      Task.timeString(task.startTime),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    Text(
+                      Task.timeString(task.stopTime),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
               ),
             ),
-            Builder(builder: (context) {
-              return Checkbox(
-                value: task.isDone,
-                onChanged: (value) {
-                  task.isDone = !task.isDone;
-                  if (task.isDone) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text("Task marked done!"),
-                        duration: Duration(seconds: 10),
-                        action: SnackBarAction(
-                          label: "Undo?",
-                          onPressed: () {
-                            context
-                                .read<TaskBloc>()
-                                .add(UpdateTask(task: task));
-                          },
-                        ),
-                      ),
-                    );
-                  }
-                  context.read<TaskBloc>().add(UpdateTask(task: task));
-                },
-                shape: const CircleBorder(),
-              );
-            }),
+            Checkbox(
+              value: task.isDone,
+              onChanged: (value) {
+                task.isDone = !task.isDone;
+                if (task.isDone) {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Task marked done!"),
+                      duration: Duration(seconds: 10),
+                    ),
+                  );
+                }
+                context
+                    .read<TaskBloc>()
+                    .add(UpdateTask(task: task, isTimeUpdated: false));
+              },
+              shape: const CircleBorder(),
+            ),
             SizedBox(
               width: 150,
               child: Column(
@@ -212,7 +211,7 @@ class ToDoList extends StatelessWidget {
                 onDismissed: (direction) {
                   context.read<TaskBloc>().add(DeleteTask(task: tasks[index]));
                 },
-                child: ToDoWidget(task: tasks[index]));
+                child: ToDoWidget(task: tasks[index], containerWidth: width));
           },
         ),
       ),
@@ -232,7 +231,9 @@ class _CreateTasksDialogState extends State<CreateTasksDialog> {
   final notes = TextEditingController();
   final startTime = TextEditingController();
   final stopTime = TextEditingController();
+  final date = TextEditingController();
   bool isTitleValid = false;
+  bool isImportantPressed = false;
 
   @override
   void dispose() {
@@ -245,15 +246,35 @@ class _CreateTasksDialogState extends State<CreateTasksDialog> {
 
   @override
   Widget build(BuildContext context) {
+    double dialogWidth = MediaQuery.of(context).size.width;
     return AlertDialog(
-      title: TextField(
-        controller: title,
-        decoration: const InputDecoration(hintText: "Task Title"),
-        onChanged: (value) {
-          setState(() {
-            isTitleValid = value.isNotEmpty;
-          });
-        },
+      title: Row(
+        children: [
+          SizedBox(
+            width: dialogWidth * 0.6,
+            child: TextField(
+              controller: title,
+              decoration: const InputDecoration(hintText: "Task Title"),
+              onChanged: (value) {
+                setState(() {
+                  isTitleValid = value.isNotEmpty;
+                });
+              },
+            ),
+          ),
+          InkWell(
+              onTap: () {
+                setState(() {
+                  isImportantPressed = !isImportantPressed;
+                });
+              },
+              child: (isImportantPressed)
+                  ? Icon(
+                      Icons.star_outlined,
+                      color: Colors.amber,
+                    )
+                  : Icon(Icons.star_border))
+        ],
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(17.7),
@@ -267,30 +288,41 @@ class _CreateTasksDialogState extends State<CreateTasksDialog> {
                 const InputDecoration(hintText: "(Optional) Description"),
           ),
           TextField(
+            controller: date,
+            decoration: const InputDecoration(
+                hintText: "(Optional) Date in yyyy-mm-dd"),
+          ),
+          TextField(
             controller: startTime,
-            decoration:
-                const InputDecoration(hintText: "(Optional) Start Time"),
+            decoration: const InputDecoration(
+                hintText: "(Optional) Start Time 24-hour format"),
           ),
           TextField(
             controller: stopTime,
-            decoration: const InputDecoration(hintText: "(Optional) Stop Time"),
+            decoration: const InputDecoration(
+                hintText: "(Optional) Stop Time 24-hour format"),
           ),
           ElevatedButton(
               onPressed: (isTitleValid)
                   ? () {
+                      DateTime? startTimeDateTime =
+                          Task.toDateTime(startTime.text, date.text);
+                      DateTime? stopTimeDateTime =
+                          Task.toDateTime(stopTime.text, date.text);
                       Task newTask = Task(
-                          title: title.text,
-                          notes: notes.text,
-                          startTime: startTime.text,
-                          stopTime: stopTime.text,
-                          isDone: false,
-                          isImportant: false,
-                          category: "Optional Category");
+                        title: title.text,
+                        notes: notes.text,
+                        startTime: startTimeDateTime,
+                        stopTime: stopTimeDateTime,
+                        isDone: false,
+                        isImportant: isImportantPressed,
+                        category: "Optional Category",
+                      );
                       context.read<TaskBloc>().add(CreateTask(task: newTask));
                       Navigator.pop(context);
                     }
                   : null,
-              child: const Text("Save Item"))
+              child: const Text("Create Task"))
         ],
       )),
     );
@@ -324,6 +356,12 @@ ThemeData appTheme = ThemeData(
       fontSize: 20,
       color: primaryTextColor,
     ),
+    labelSmall: TextStyle(
+        fontFamily: "Signika",
+        fontWeight: FontWeight.w300,
+        fontSize: 8,
+        color: secondaryTextColor,
+        overflow: TextOverflow.ellipsis),
     labelMedium: TextStyle(
       fontFamily: "Jost",
       fontSize: 18,
