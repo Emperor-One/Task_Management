@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../bloc/task_bloc.dart';
+import '../models/models.dart';
 import 'widgets.dart';
 
 class TodaysTasks extends StatefulWidget {
@@ -14,8 +17,6 @@ class _TodaysTasksState extends State<TodaysTasks> {
   bool donePressed = false;
   @override
   Widget build(BuildContext context) {
-    final List<int> tasks = List.generate(1000, (index) => index);
-    final List<int> doneTasks = List.generate(2, (index) => index);
     double pageWidth = MediaQuery.of(context).size.width;
     double pageHeight = MediaQuery.of(context).size.height;
     double containerWidth = MediaQuery.of(context).size.width * 0.91;
@@ -59,39 +60,50 @@ class _TodaysTasksState extends State<TodaysTasks> {
             ],
           ),
         ),
-        child: SizedBox(
-          height: pageHeight,
-          child: Column(
-            children: [
-              Builder(builder: (context) {
-                return (donePressed)
-                    ? const Center(child: SizedBox())
-                    : ToDoList(
-                        width: containerWidth,
-                        height: pageHeight * 0.6,
-                        tasks: tasks,
-                      );
-              }),
-              DoneTasksBanner(
-                width: containerWidth,
-                pressed: donePressed,
-                onTap: () {
-                  setState(() {
-                    donePressed = (!donePressed) ? true : false;
-                  });
-                },
-              ),
-              Builder(builder: (context) {
-                return (!donePressed)
-                    ? const Center(child: SizedBox())
-                    : ToDoList(
-                        width: containerWidth,
-                        height: pageHeight * 0.6,
-                        tasks: doneTasks,
-                      );
-              })
-            ],
-          ),
+        child: BlocBuilder<TaskBloc, TaskState>(
+          builder: (context, state) {
+            if (state is TaskLoaded) {
+              List<Task> doneTasksList = state.tasks.where((task) => task.isDone).toList();
+              List<Task> tasksList = state.tasks.where((task) => !task.isDone).toList();
+              return SizedBox(
+                height: pageHeight,
+                child: Column(
+                  children: [
+                    Builder(builder: (context) {
+                      return (donePressed)
+                          ? const Center(child: SizedBox())
+                          : ToDoList(
+                              width: containerWidth,
+                              height: pageHeight * 0.6,
+                              tasks: tasksList,
+                            );
+                    }),
+                    DoneTasksBanner(
+                      width: containerWidth,
+                      pressed: donePressed,
+                      doneTasksCount: doneTasksList.length,
+                      onTap: () {
+                        setState(() {
+                          donePressed = (!donePressed) ? true : false;
+                        });
+                      },
+                    ),
+                    Builder(builder: (context) {
+                      return (!donePressed)
+                          ? const Center(child: SizedBox())
+                          : ToDoList(
+                              width: containerWidth,
+                              height: pageHeight * 0.6,
+                              tasks: doneTasksList,
+                            );
+                    })
+                  ],
+                ),
+              );
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
         ),
       ),
     );

@@ -77,15 +77,14 @@ class LocalTaskDataProvider {
         where: "parentTaskId = ?", whereArgs: [task.id], orderBy: "id");
   }
 
-  Future<int> updateTask(Task task) async {
+  Future<Task> updateTask(Task task) async {
     final db = await this.db();
 
     final taskData = task.toJson();
 
-    final rowsAffected = await db
-        .update('tasks', taskData, where: "id = ?", whereArgs: [task.id]);
+    await db.update('tasks', taskData, where: "id = ?", whereArgs: [task.id]);
 
-    final subTasks = task.subTasks!.map((subtask) {
+    final subTasks = task.subTasks?.map((subtask) {
       return {
         "parentTaskId": task.id,
         "title": subtask.title,
@@ -93,11 +92,19 @@ class LocalTaskDataProvider {
       };
     });
 
-    for (final subTaskData in subTasks) {
+    subTasks?.forEach((subTaskData) async {
       await db.update('subTasks', subTaskData,
           where: "parentTaskId = ?", whereArgs: [task.id]);
-    }
+    });
 
-    return rowsAffected;
+    final updatedTask = await db.query('tasks',
+        where: "id = ?", whereArgs: [task.id], limit: 1);
+    return Task.fromJson(updatedTask[0]);
+  }
+
+  Future<void> deleteTask(Task task) async {
+    final db = await this.db();
+
+    await db.delete('tasks', where: "id = ?", whereArgs: [task.id]);
   }
 }

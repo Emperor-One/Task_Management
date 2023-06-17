@@ -6,13 +6,13 @@ class Task {
   final String? notes;
   final String? startTime;
   final String? stopTime;
-  final bool isDone;
+  bool isDone;
   final bool isImportant;
   final List<SubTasks>? subTasks;
   final String category;
   final String? date;
 
-  const Task(
+  Task(
       {this.id,
       required this.title,
       this.notes,
@@ -44,10 +44,15 @@ class Task {
       "notes": notes,
       "startTime": startTime,
       "stopTime": stopTime,
-      "isDone": (isDone) ? 1: 0,
-      "isImportant": (isImportant) ? 1: 0,
+      "isDone": (isDone) ? 1 : 0,
+      "isImportant": (isImportant) ? 1 : 0,
       "category": category,
       "date": date
     };
+  }
+
+  @override
+  String toString() {
+    return 'Task{id: $id, title: $title, notes: $notes, startTime: $startTime, stopTime: $stopTime, isDone: $isDone, isImportant: $isImportant, category: $category, date: $date,\nsubTasks: $subTasks}\n';
   }
 }

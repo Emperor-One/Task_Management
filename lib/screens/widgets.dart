@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:animated_splash_screen/animated_splash_screen.dart';
+import 'package:task_management/screens/home_screen.dart';
 
 import '../bloc/task_bloc.dart';
 import '../models/models.dart';
@@ -10,10 +12,9 @@ const Color primaryTextColor = Color(0xFF363636);
 const Color secondaryTextColor = Color(0xFF888888);
 
 class ToDoWidget extends StatelessWidget {
-  final String title;
-  final String notes;
+  final Task task;
 
-  const ToDoWidget({required this.title, required this.notes, super.key});
+  const ToDoWidget({required this.task, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +22,6 @@ class ToDoWidget extends StatelessWidget {
       "Mark Important",
       "Add SubTasks",
       "Edit Tasks",
-      "Delete Task"
     ];
     return InkWell(
       child: Container(
@@ -42,21 +42,42 @@ class ToDoWidget extends StatelessWidget {
                   //   style: Theme.of(context).textTheme.bodySmall,
                   // ),
                   Text(
-                    "10:00am",
+                    task.startTime ?? "",
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Text(
-                    "11:00am",
+                    task.stopTime ?? "",
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),
             ),
-            Checkbox(
-              value: false,
-              onChanged: (value) {},
-              shape: const CircleBorder(),
-            ),
+            Builder(builder: (context) {
+              return Checkbox(
+                value: task.isDone,
+                onChanged: (value) {
+                  task.isDone = !task.isDone;
+                  if (task.isDone) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Task marked done!"),
+                        duration: Duration(seconds: 10),
+                        action: SnackBarAction(
+                          label: "Undo?",
+                          onPressed: () {
+                            context
+                                .read<TaskBloc>()
+                                .add(UpdateTask(task: task));
+                          },
+                        ),
+                      ),
+                    );
+                  }
+                  context.read<TaskBloc>().add(UpdateTask(task: task));
+                },
+                shape: const CircleBorder(),
+              );
+            }),
             SizedBox(
               width: 150,
               child: Column(
@@ -64,12 +85,12 @@ class ToDoWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    task.title,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   Flexible(
                     child: Text(
-                      notes,
+                      task.notes ?? "",
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -105,8 +126,10 @@ class DoneTasksBanner extends StatelessWidget {
   final double width;
   final VoidCallback onTap;
   final bool pressed;
+  final int doneTasksCount;
   const DoneTasksBanner(
-      {required this.width,
+      {required this.doneTasksCount,
+      required this.width,
       required this.onTap,
       this.pressed = false,
       super.key});
@@ -142,7 +165,7 @@ class DoneTasksBanner extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Done Tasks (2)",
+                  "Done Tasks ($doneTasksCount)",
                   style: Theme.of(context).textTheme.labelMedium,
                 ),
                 Builder(builder: (context) {
@@ -168,7 +191,7 @@ class DoneTasksBanner extends StatelessWidget {
 class ToDoList extends StatelessWidget {
   final double width;
   final double height;
-  final List<dynamic> tasks;
+  final List<Task> tasks;
   const ToDoList(
       {required this.width,
       required this.height,
@@ -184,11 +207,12 @@ class ToDoList extends StatelessWidget {
         child: ListView.builder(
           itemCount: tasks.length,
           itemBuilder: (context, index) {
-            return ToDoWidget(
-              title: "Do this stuff $index",
-              notes:
-                  "Add some details to what you plan on doing here nice and cool. Yes make it long to demonstrate flexiblity.",
-            );
+            return Dismissible(
+                key: Key(tasks[index].id!.toString()),
+                onDismissed: (direction) {
+                  context.read<TaskBloc>().add(DeleteTask(task: tasks[index]));
+                },
+                child: ToDoWidget(task: tasks[index]));
           },
         ),
       ),
@@ -196,20 +220,40 @@ class ToDoList extends StatelessWidget {
   }
 }
 
-class CreateTasksDialog extends StatelessWidget {
+class CreateTasksDialog extends StatefulWidget {
+  const CreateTasksDialog({super.key});
+
+  @override
+  State<CreateTasksDialog> createState() => _CreateTasksDialogState();
+}
+
+class _CreateTasksDialogState extends State<CreateTasksDialog> {
   final title = TextEditingController();
   final notes = TextEditingController();
   final startTime = TextEditingController();
   final stopTime = TextEditingController();
+  bool isTitleValid = false;
 
-  CreateTasksDialog({super.key});
+  @override
+  void dispose() {
+    title.dispose();
+    notes.dispose();
+    startTime.dispose();
+    stopTime.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: TextField(
         controller: title,
-        decoration: const InputDecoration(hintText: "Task"),
+        decoration: const InputDecoration(hintText: "Task Title"),
+        onChanged: (value) {
+          setState(() {
+            isTitleValid = value.isNotEmpty;
+          });
+        },
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(17.7),
@@ -232,18 +276,20 @@ class CreateTasksDialog extends StatelessWidget {
             decoration: const InputDecoration(hintText: "(Optional) Stop Time"),
           ),
           ElevatedButton(
-              onPressed: () {
-                Task newTask = Task(
-                    title: title.text,
-                    notes: notes.text,
-                    startTime: startTime.text,
-                    stopTime: stopTime.text,
-                    isDone: false,
-                    isImportant: false,
-                    category: "Optional Category");
-                context.read<TaskBloc>().add(CreateTask(task: newTask));
-                Navigator.pop(context);
-              },
+              onPressed: (isTitleValid)
+                  ? () {
+                      Task newTask = Task(
+                          title: title.text,
+                          notes: notes.text,
+                          startTime: startTime.text,
+                          stopTime: stopTime.text,
+                          isDone: false,
+                          isImportant: false,
+                          category: "Optional Category");
+                      context.read<TaskBloc>().add(CreateTask(task: newTask));
+                      Navigator.pop(context);
+                    }
+                  : null,
               child: const Text("Save Item"))
         ],
       )),

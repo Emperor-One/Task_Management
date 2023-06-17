@@ -13,4 +13,16 @@ class LocalTaskRepository {
   Future<List<Task>> getTasks() async {
     return dataProvider.getTasks();
   }
+
+  Future<List<Task>> getDoneTasks() async {
+    return dataProvider.getTasks();
+  }
+
+  Future<Task> updateTask(Task task) async {
+    return dataProvider.updateTask(task);
+  }
+
+  Future<void> deleteTask(Task task) async {
+    return dataProvider.deleteTask(task);
+  }
 }

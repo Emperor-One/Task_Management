@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:task_management/screens/home_screen.dart';
 
 import 'bloc/task_bloc.dart';
 import 'data_providers/local_task_data_provider.dart';
@@ -25,7 +26,9 @@ class App extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider<TaskBloc>(
-            create: (context) => TaskBloc(localTaskRepository: localTaskRepository)..add(const TaskLoad()))
+              create: (context) =>
+                  TaskBloc(localTaskRepository: localTaskRepository)
+                    ..add(const TaskLoad()))
         ],
         child: MaterialApp.router(
           debugShowCheckedModeBanner: false,
@@ -33,6 +36,10 @@ class App extends StatelessWidget {
             routes: [
               GoRoute(
                 path: "/",
+                builder: (context, state) => const HomeScreen(),
+              ),
+              GoRoute(
+                path: "/TodaysTasksScreen",
                 builder: (context, state) => const TodaysTasks(),
               ),
             ],

@@ -25,5 +25,25 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         print(state as TaskLoaded);
       },
     );
+
+    on<UpdateTask>(
+      (event, emit) async {
+        emit(TaskLoading());
+        await localTaskRepository.updateTask(event.task);
+        final tasks = await localTaskRepository.getTasks();
+        emit(TaskLoaded(tasks: tasks));
+        print(state as TaskLoaded);
+      },
+    );
+
+    on<DeleteTask>(
+      (event, emit) async {
+        emit(TaskLoading());
+        await localTaskRepository.deleteTask(event.task);
+        final tasks = await localTaskRepository.getTasks();
+        emit(TaskLoaded(tasks: tasks));
+        print(state as TaskLoaded);
+      },
+    );
   }
 }
