@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../bloc/task_bloc.dart';
+import '../models/models.dart';
 
 const Color primaryColor = Color.fromRGBO(100, 111, 212, 100);
 const Color scaffoldColor = Color.fromRGBO(100, 111, 212, 1);
@@ -188,6 +192,61 @@ class ToDoList extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+class CreateTasksDialog extends StatelessWidget {
+  final title = TextEditingController();
+  final notes = TextEditingController();
+  final startTime = TextEditingController();
+  final stopTime = TextEditingController();
+
+  CreateTasksDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: TextField(
+        controller: title,
+        decoration: const InputDecoration(hintText: "Task"),
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(17.7),
+      ),
+      content: SingleChildScrollView(
+          child: Column(
+        children: [
+          TextField(
+            controller: notes,
+            decoration:
+                const InputDecoration(hintText: "(Optional) Description"),
+          ),
+          TextField(
+            controller: startTime,
+            decoration:
+                const InputDecoration(hintText: "(Optional) Start Time"),
+          ),
+          TextField(
+            controller: stopTime,
+            decoration: const InputDecoration(hintText: "(Optional) Stop Time"),
+          ),
+          ElevatedButton(
+              onPressed: () {
+                Task newTask = Task(
+                    title: title.text,
+                    notes: notes.text,
+                    startTime: startTime.text,
+                    stopTime: stopTime.text,
+                    isDone: false,
+                    isImportant: false,
+                    category: "Optional Category");
+                context.read<TaskBloc>().add(CreateTask(task: newTask));
+                Navigator.pop(context);
+              },
+              child: const Text("Save Item"))
+        ],
+      )),
     );
   }
 }

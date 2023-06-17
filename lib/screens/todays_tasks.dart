@@ -21,6 +21,7 @@ class _TodaysTasksState extends State<TodaysTasks> {
     double containerWidth = MediaQuery.of(context).size.width * 0.91;
     double backArrowPadding = (pageWidth - containerWidth) / 2;
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: Padding(
           padding: EdgeInsets.only(left: backArrowPadding),
@@ -33,7 +34,13 @@ class _TodaysTasksState extends State<TodaysTasks> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: scaffoldColor,
-        onPressed: () {},
+        onPressed: () {
+          showDialog(
+              context: context,
+              builder: (context) {
+                return CreateTasksDialog();
+              });
+        },
         child: const Icon(
           Icons.add,
           size: 32.0,

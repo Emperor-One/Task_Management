@@ -1,40 +1,53 @@
-import 'sub_tasks.dart';
+import 'sub_task.dart';
 
 class Task {
-  final int id;
+  final int? id;
   final String title;
-  final String notes;
-  final String startTime;
-  final String stopTime;
+  final String? notes;
+  final String? startTime;
+  final String? stopTime;
   final bool isDone;
   final bool isImportant;
-  final List<SubTasks> subTasks;
+  final List<SubTasks>? subTasks;
   final String category;
-  final String date;
+  final String? date;
 
   const Task(
-      {required this.id,
+      {this.id,
       required this.title,
-      required this.notes,
-      required this.startTime,
-      required this.stopTime,
+      this.notes,
+      this.startTime,
+      this.stopTime,
       required this.isDone,
       required this.isImportant,
-      required this.subTasks,
+      this.subTasks = const [],
       required this.category,
-      required this.date});
+      this.date});
 
-  factory Task.fromSQLTuple(List<dynamic> tuple) {
+  factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
-        id: tuple[0],
-        title: tuple[1],
-        notes: tuple[2],
-        startTime: tuple[3],
-        stopTime: tuple[4],
-        isDone: tuple[5],
-        isImportant: tuple[6],
-        subTasks: tuple[7],
-        category: tuple[8],
-        date: tuple[9]);
+        id: json["id"],
+        title: json["title"],
+        notes: json["notes"],
+        startTime: json["startTime"],
+        stopTime: json["stopTime"],
+        isDone: json["isDone"] == 1,
+        isImportant: json["isImportant"] == 1,
+        subTasks: json["subTasks"],
+        category: json["category"],
+        date: json["date"]);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "title": title,
+      "notes": notes,
+      "startTime": startTime,
+      "stopTime": stopTime,
+      "isDone": (isDone) ? 1: 0,
+      "isImportant": (isImportant) ? 1: 0,
+      "category": category,
+      "date": date
+    };
   }
 }
